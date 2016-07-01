@@ -25,10 +25,10 @@ public class ApkOrJarPatch extends Patch {
     private static final String TAG = DEBUG ? "ApkOrJarPatch" : ApkOrJarPatch.class.getSimpleName();
 
     public static final String ENTRY_NAME = "META-INFO/PATCH.MF";
-    public static final String Patch_Name = "Patch-Name";
-    public static final String Patch_VersionBuild = "Patch-VersionBuild";
-    public static final String Patch_Timestamp = "Patch-Timestamp";
-    public static final String Patch_Classes = "Patch-Classes";
+    public static final String PATCH_NAME = "Patch-Name";
+    public static final String PATCH_VERSION_BUILD = "Patch-VersionBuild";
+    public static final String PATCH_TIMESTAMP = "Patch-Timestamp";
+    public static final String PATCH_CLASSES = "Patch-Classes";
 
     /**
      * patch 所在的路径
@@ -46,8 +46,8 @@ public class ApkOrJarPatch extends Patch {
     private DexFile mDex;
 
     /**
-     * @param apkOrJarPath    要加载的apk文件路径
-     * @param optDexPath 要存储的 odex 文件路径
+     * @param apkOrJarPath 要加载的apk文件路径
+     * @param optDexPath   要存储的 odex 文件路径
      * @throws IOException
      */
     public ApkOrJarPatch(Context context, String apkOrJarPath, String optDexPath) throws IOException {
@@ -69,11 +69,11 @@ public class ApkOrJarPatch extends Patch {
             Manifest manifest = new Manifest(inputStream);
             Attributes main = manifest.getMainAttributes();
             // patch名
-            mName = main.getValue(Patch_Name);
+            mName = main.getValue(PATCH_NAME);
             // patch对应卫士的版本号
-            mVersionBuild = main.getValue(Patch_VersionBuild);
+            mVersionBuild = main.getValue(PATCH_VERSION_BUILD);
             // patch创建的时间戳
-            mTimestamp = Long.parseLong(main.getValue(Patch_Timestamp));
+            mTimestamp = Long.parseLong(main.getValue(PATCH_TIMESTAMP));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -102,7 +102,7 @@ public class ApkOrJarPatch extends Patch {
 
     @Override
     public ClassLoader initClassLoader() {
-        return new ClassLoader(getClass().getClassLoader()){
+        return new ClassLoader(getClass().getClassLoader()) {
             @Override
             protected Class<?> findClass(String className) throws ClassNotFoundException {
                 Class<?> clazz = mDex.loadClass(className, this);
@@ -125,7 +125,7 @@ public class ApkOrJarPatch extends Patch {
             inputStream = jarFile.getInputStream(entry);
             Manifest manifest = new Manifest(inputStream);
             Attributes main = manifest.getMainAttributes();
-            return main.getValue(Patch_Classes).split(",");
+            return main.getValue(PATCH_CLASSES).split(",");
         } catch (Exception e) {
             e.printStackTrace();
             return null;

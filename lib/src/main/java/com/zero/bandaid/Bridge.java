@@ -11,11 +11,11 @@ import java.lang.reflect.Member;
 public class Bridge {
 
     public static Object handleHookedMethod(Member method, int originalMethodId, Object dstMeth,
-                                          Object thisObject, Object[] args) {
+                                            Object thisObject, Object[] args) {
         Log.e("Bridge", "handleHookedMethod");
         if (null != args) {
             for (Object arg : args) {
-                Log.e("Bridge", "arg="+arg);
+                Log.e("Bridge", "arg=" + arg);
             }
         }
         return 0;

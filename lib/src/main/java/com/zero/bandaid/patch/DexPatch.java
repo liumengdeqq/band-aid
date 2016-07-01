@@ -49,7 +49,7 @@ public class DexPatch extends Patch {
     }
 
     public ClassLoader initClassLoader() {
-        return new ClassLoader(getClass().getClassLoader()){//这个classloader设置!!!!!
+        return new ClassLoader(getClass().getClassLoader()) { //这个classloader设置!!!!!
             @Override
             protected Class<?> findClass(String className) throws ClassNotFoundException {
                 Class<?> clazz = mDex.loadClass(className, this);
@@ -65,14 +65,14 @@ public class DexPatch extends Patch {
         Class<?> clazz = null;
         try {
             if (DEBUG) {
-                Log.e(TAG, "[loadPatchClass] : patchClass="+patchClass);
+                Log.e(TAG, "[loadPatchClass] : patchClass=" + patchClass);
             }
             clazz = Class.forName(patchClass, true, mClassLoader);
             if (DEBUG) {
-                Log.e(TAG, "[loadPatchClass] : clazz="+clazz);
+                Log.e(TAG, "[loadPatchClass] : clazz=" + clazz);
             }
         } catch (ClassNotFoundException e) {
-            Log.e(TAG,"", e);
+            Log.e(TAG, "", e);
         }
         return clazz;
 //        return mDex.loadClass(patchClass, mClassLoader);
