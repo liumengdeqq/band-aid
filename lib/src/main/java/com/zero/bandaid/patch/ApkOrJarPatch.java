@@ -31,11 +31,6 @@ public class ApkOrJarPatch extends Patch {
     public static final String Patch_Classes = "Patch-Classes";
 
     /**
-     * 加载它的 ClassLoader
-     */
-    protected ClassLoader mClassLoader;
-
-    /**
      * patch 所在的路径
      */
     private String mApkOrJarPath;
@@ -56,7 +51,7 @@ public class ApkOrJarPatch extends Patch {
      * @throws IOException
      */
     public ApkOrJarPatch(Context context, String apkOrJarPath, String optDexPath) throws IOException {
-        super(context);
+        super();
         mApkOrJarPath = apkOrJarPath;
         mODexPath = optDexPath;
         mDex = DexFile.loadDex(mApkOrJarPath, mODexPath, 0);
@@ -78,7 +73,7 @@ public class ApkOrJarPatch extends Patch {
             // patch对应卫士的版本号
             mVersionBuild = main.getValue(Patch_VersionBuild);
             // patch创建的时间戳
-            mTimestamp = Long.valueOf(main.getValue(Patch_Timestamp));
+            mTimestamp = Long.parseLong(main.getValue(Patch_Timestamp));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -110,7 +105,7 @@ public class ApkOrJarPatch extends Patch {
         return new ClassLoader(getClass().getClassLoader()){
             @Override
             protected Class<?> findClass(String className) throws ClassNotFoundException {
-                Class<?> clazz = mDex.loadClass(className, mClassLoader);
+                Class<?> clazz = mDex.loadClass(className, this);
                 if (null == clazz) {
                     throw new ClassNotFoundException(className);
                 }

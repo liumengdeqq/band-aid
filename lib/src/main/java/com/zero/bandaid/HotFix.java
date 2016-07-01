@@ -40,16 +40,17 @@ public class HotFix {
             }
         }
     }
+
     private static HotFix sInstance;
 
-    public synchronized static HotFix getInstance() {
+    public static synchronized HotFix getInstance() {
         if (null == sInstance) {
             sInstance = new HotFix();
         }
         return sInstance;
     }
 
-    synchronized public void addPatch(Patch patch) {
+    public synchronized void addPatch(Patch patch) {
 //        if (!isSetuped) {
 //            setup();
 //        }
@@ -76,7 +77,7 @@ public class HotFix {
      *
      * @return true if initialize success
      */
-    synchronized public boolean setup(Context context) {
+    public synchronized boolean setup(Context context) {
         if (isSetuped) {
             return true;
         }
@@ -136,7 +137,9 @@ public class HotFix {
         try {
             File odexDir = new File(patchDexFile.getParentFile().getAbsolutePath() + "/opatches/");
             if (!odexDir.isDirectory()) {
-                odexDir.mkdirs();
+                if (!odexDir.mkdirs()) {
+                    return false;
+                }
             }
             Patch patch = new DexPatch(mContext, patchDexFile.getAbsolutePath(), odexDir.getAbsolutePath() + "/test_patch.odex");
             sPatches.add(patch);
@@ -235,7 +238,7 @@ public class HotFix {
         }
     }
 
-    private static void applyPatch(Method src, Method dst, int mode){
+    private static void applyPatch(Method src, Method dst, int mode) {
         if (DEBUG) {
             Log.d(TAG, "[applyPatch] ; src = " + src.getDeclaringClass().getName() + "." + src.getName());
             Log.d(TAG, "[applyPatch] ; dst = " + dst.getDeclaringClass().getName() + "." + dst.getName());

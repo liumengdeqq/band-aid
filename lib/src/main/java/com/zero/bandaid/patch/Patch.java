@@ -1,6 +1,5 @@
 package com.zero.bandaid.patch;
 
-import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -19,7 +18,7 @@ import java.util.Map;
  * <p/>
  * Patch 抽象类，表示一个 patch
  */
-abstract public class Patch {
+public abstract class Patch {
 
     private static final boolean DEBUG = Env.DEBUG;
 
@@ -29,16 +28,14 @@ abstract public class Patch {
         Unloaded, Loaded, Inited, Fixed
     }
 
-    protected Context mContext;
-
     /**
      * 加载它的 ClassLoader
      */
     protected ClassLoader mClassLoader;
 
-    public static final String Default_Patch_Name = "Unknown";
+    public static final String DEFAULT_PATCH_NAME = "Unknown";
 
-    protected String mName = Default_Patch_Name;
+    protected String mName = DEFAULT_PATCH_NAME;
 
     protected long mTimestamp;
 
@@ -61,18 +58,17 @@ abstract public class Patch {
      *
      * @return
      */
-    abstract public void initMetaInfo();
+    public abstract void initMetaInfo();
 
-    abstract public Class<?> loadPatchClass(String patchClass);
+    public abstract Class<?> loadPatchClass(String patchClass);
 
-    abstract public ClassLoader initClassLoader();
+    public abstract ClassLoader initClassLoader();
 
-    abstract public String[] initPatchClasses();
+    public abstract String[] initPatchClasses();
 
-    abstract public boolean isCurrentProcessApply();
+    public abstract boolean isCurrentProcessApply();
 
-    public Patch(Context context) {
-        mContext = context;
+    public Patch() {
     }
 
     /**
@@ -98,8 +94,8 @@ abstract public class Patch {
                 }
                 // 标注中的被修改的类
                 String clz = srcMethodFixAnnotaion.clazz();
-                List<MethodInfo> methods;
-                if (null == (methods = mPatchMethods.get(clz))) {
+                List<MethodInfo> methods = mPatchMethods.get(clz);
+                if (null == methods) {
                     methods = new ArrayList<>();
                     mPatchMethods.put(clz, methods);
                 }
@@ -119,7 +115,7 @@ abstract public class Patch {
             }
             return true;
         } catch (Exception e) {
-            Log.e(TAG,"", e);
+            Log.e(TAG, "", e);
             return false;
         }
     }

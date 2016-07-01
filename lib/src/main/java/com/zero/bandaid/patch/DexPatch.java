@@ -42,7 +42,7 @@ public class DexPatch extends Patch {
      * @throws IOException
      */
     public DexPatch(Context context, String dexPath, String optDexPath) throws IOException {
-        super(context);
+        super();
         mDexPath = dexPath;
         mODexPath = optDexPath;
         mDex = DexFile.loadDex(mDexPath, mODexPath, 0);
@@ -52,7 +52,7 @@ public class DexPatch extends Patch {
         return new ClassLoader(getClass().getClassLoader()){//这个classloader设置!!!!!
             @Override
             protected Class<?> findClass(String className) throws ClassNotFoundException {
-                Class<?> clazz = mDex.loadClass(className, mClassLoader);
+                Class<?> clazz = mDex.loadClass(className, this);
                 if (null == clazz) {
                     throw new ClassNotFoundException(className);
                 }

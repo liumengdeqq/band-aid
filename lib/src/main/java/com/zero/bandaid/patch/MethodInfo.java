@@ -7,9 +7,20 @@ import java.lang.reflect.Method;
  * 包含被替换方法和替换方法
  */
 public class MethodInfo {
-    Method mSrc;
-    Method mDst;
-    int mMode;
+    /**
+     * 要替换的原方法
+     */
+    private Method mSrc;
+
+    /**
+     * 要替换成的目标方法
+     */
+    private Method mDst;
+
+    /**
+     * 替换的模式
+     */
+    private int mMode;
 
     public MethodInfo(Method src, Method dst, int mode) {
         mSrc = src;
