@@ -6,6 +6,6 @@
 .DS_Store
 /build
 /captures
-obj/**/*
-.idea/**/*
-app/build/**/*
+**/obj/**/*
+**/.idea/**/*
+**/build/**/*
