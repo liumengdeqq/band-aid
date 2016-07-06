@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.zero.bandaid.HotFix;
 import com.zero.bandaid.Env;
+import com.zero.bandaid.annotation.ClassFix;
 import com.zero.bandaid.annotation.MethodFix;
 
 import java.lang.reflect.Method;
@@ -83,6 +84,12 @@ public abstract class Patch {
             if (null == dstClazz) {
                 return false;
             }
+            //todo 判断该类是否是替换类
+            ClassFix srcClazzAnnotation = dstClazz.getAnnotation(ClassFix.class);
+            if (null != srcClazzAnnotation) {
+                //todo 说明是替换类
+            }
+
             Method[] dstClazzAllMethods = dstClazz.getDeclaredMethods();
             // 标注中包含被替换方法的信息
             MethodFix srcMethodFixAnnotaion;
