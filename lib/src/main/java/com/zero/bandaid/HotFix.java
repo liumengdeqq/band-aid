@@ -63,7 +63,7 @@ public class HotFix {
             return;
         }
         patch.setStatus(Patch.Status.Inited);
-        for (String clazz : patch.getPatchClasses()) {
+        for (String clazz : patch.getSrcClasses()) {
             for (MethodInfo method : patch.getSrcDstMethods(clazz)) {
                 applyPatch(method.getSrc(), method.getDst(), method.getMode());
                 initFields(method.getDst().getDeclaringClass());
@@ -164,6 +164,9 @@ public class HotFix {
         try {
             for (Patch patch : sPatches) {
                 if (Patch.Status.Inited == patch.getStatus()) {
+                    for (Map.Entry<Class<?>, Class<?>> entry : patch.getPatchClasses().entrySet()) {
+                        applyPatch(entry.getKey(), entry.getValue());
+                    }
                     for (Map.Entry<String, List<MethodInfo>> entry : patch.getPatchMethods().entrySet()) {
                         for (MethodInfo method : entry.getValue()) {
                             applyPatch(method.getSrc(), method.getDst(), method.getMode());
@@ -248,6 +251,14 @@ public class HotFix {
             Log.d(TAG, "[applyPatch] ; dst = " + dst.getDeclaringClass().getName() + "." + dst.getName());
         }
         applyPatchNative(src, dst, mode);
+    }
+
+    private static void applyPatch(Class<?> src, Class<?> dst) {
+        if (DEBUG) {
+            Log.d(TAG, "[applyPatch] ; src = " + src.getName() + "." + src.getName());
+            Log.d(TAG, "[applyPatch] ; dst = " + dst.getName() + "." + dst.getName());
+        }
+        //todo
     }
 
     /**

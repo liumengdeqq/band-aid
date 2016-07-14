@@ -28,17 +28,17 @@ public abstract class Patch {
         String name;
         long timestamp;
         String versionBuild;
-        String[] patchClasses = null;
+        String[] srcClasses = null;
         /**
          * all - 所有进程，main - 主进程，以":"开头的词 - 其他指定进程，其他字符 - 与all相同
          */
         String applyProcess;
 
-        Info(String name, long timestamp, String versionBuild, String[] patchClasses, String applyProcess) {
+        Info(String name, long timestamp, String versionBuild, String[] srcClasses, String applyProcess) {
             this.name = name;
             this.timestamp = timestamp;
             this.versionBuild = versionBuild;
-            this.patchClasses = patchClasses;
+            this.srcClasses = srcClasses;
             this.applyProcess = applyProcess;
         }
     }
@@ -133,9 +133,8 @@ public abstract class Patch {
             ClassFix srcClazzAnnotation = dstClazz.getAnnotation(ClassFix.class);
             if (null != srcClazzAnnotation) { // 说明是替换类
                 String srcClassStr = srcClazzAnnotation.clazz();
-                Class<?> srcClazz = null;
                 try {
-                    srcClazz = Class.forName(srcClassStr);
+                    Class<?> srcClazz = Class.forName(srcClassStr);
                     mPatchCLasses.put(srcClazz, dstClazz);
                     return true;
                 } catch (ClassNotFoundException e) {
@@ -205,7 +204,7 @@ public abstract class Patch {
         }
         try {
             // patch中哪些类是包含被替换方法的
-            String[] classStrs = getPatchClasses();
+            String[] classStrs = getSrcClasses();
             for (String str : classStrs) {
                 String classStr = str.trim();
                 if (!TextUtils.isEmpty(classStr)) {
@@ -231,6 +230,10 @@ public abstract class Patch {
         return mPatchMethods;
     }
 
+    public Map<Class<?>, Class<?>> getPatchClasses() {
+        return mPatchCLasses;
+    }
+
     public Status getStatus() {
         return mStatus;
     }
@@ -239,8 +242,8 @@ public abstract class Patch {
         this.mStatus = status;
     }
 
-    public String[] getPatchClasses() {
-        return mPatchInfo.patchClasses;
+    public String[] getSrcClasses() {
+        return mPatchInfo.srcClasses;
     }
 
     public String getPatchName() {
