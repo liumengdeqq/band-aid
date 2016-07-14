@@ -1,6 +1,7 @@
 package com.zero.bandaid.patch;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.zero.bandaid.Env;
 
@@ -29,6 +30,7 @@ public class ApkOrJarPatch extends Patch {
     public static final String PATCH_VERSION_BUILD = "Patch-VersionBuild";
     public static final String PATCH_TIMESTAMP = "Patch-Timestamp";
     public static final String PATCH_CLASSES = "Patch-Classes";
+    public static final String PATCH_APPLY_PROCESS = "Patch-ApplyProcess";
 
     /**
      * patch 所在的路径
@@ -41,20 +43,14 @@ public class ApkOrJarPatch extends Patch {
     private String mODexPath;
 
     /**
-     * 加载的 DexFile
-     */
-    private DexFile mDex;
-
-    /**
      * @param apkOrJarPath 要加载的apk文件路径
      * @param optDexPath   要存储的 odex 文件路径
      * @throws IOException
      */
-    public ApkOrJarPatch(Context context, String apkOrJarPath, String optDexPath) throws IOException {
+    public ApkOrJarPatch(Context context, String apkOrJarPath, String optDexPath) {
         super();
         mApkOrJarPath = apkOrJarPath;
         mODexPath = optDexPath;
-        mDex = DexFile.loadDex(mApkOrJarPath, mODexPath, 0);
     }
 
     @Override
@@ -74,7 +70,8 @@ public class ApkOrJarPatch extends Patch {
             String versionBuild = main.getValue(PATCH_VERSION_BUILD);
             // patch创建的时间戳
             long timestamp = Long.parseLong(main.getValue(PATCH_TIMESTAMP));
-            return new Info(name, timestamp, versionBuild);
+            String applyProcess = main.getValue(PATCH_APPLY_PROCESS);
+            return new Info(name, timestamp, versionBuild, main.getValue(PATCH_CLASSES).split(","), applyProcess);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -97,60 +94,12 @@ public class ApkOrJarPatch extends Patch {
     }
 
     @Override
-    public Class<?> loadPatchClass(String patchClass) {
-        return mDex.loadClass(patchClass, mClassLoader);
-    }
-
-    @Override
-    public ClassLoader initClassLoader() {
-        return new ClassLoader(getClass().getClassLoader()) {
-            @Override
-            protected Class<?> findClass(String className) throws ClassNotFoundException {
-                Class<?> clazz = mDex.loadClass(className, this);
-                if (null == clazz) {
-                    throw new ClassNotFoundException(className);
-                }
-                return clazz;
-            }
-        };
-    }
-
-    @Override
-    public String[] initPatchClasses() {
-        JarFile jarFile = null;
-        InputStream inputStream = null;
+    public DexFile initDexFile() {
         try {
-            // 读取PATCH.MF中的属性
-            jarFile = new JarFile(new File(mApkOrJarPath));
-            JarEntry entry = jarFile.getJarEntry(ENTRY_NAME);
-            inputStream = jarFile.getInputStream(entry);
-            Manifest manifest = new Manifest(inputStream);
-            Attributes main = manifest.getMainAttributes();
-            return main.getValue(PATCH_CLASSES).split(",");
-        } catch (Exception e) {
-            e.printStackTrace();
+            return DexFile.loadDex(mApkOrJarPath, mODexPath, 0);
+        } catch (IOException e) {
+            Log.e(TAG, "[initDexFile]", e);
             return null;
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (jarFile != null) {
-                try {
-                    jarFile.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
-
-    @Override
-    public boolean isCurrentProcessApply() {
-        return true;
-    }
-
 }

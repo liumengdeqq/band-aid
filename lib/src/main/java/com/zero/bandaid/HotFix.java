@@ -72,6 +72,10 @@ public class HotFix {
         patch.setStatus(Patch.Status.Fixed);
     }
 
+    public Context getContext() {
+        return mContext;
+    }
+
     /**
      * initialize
      *

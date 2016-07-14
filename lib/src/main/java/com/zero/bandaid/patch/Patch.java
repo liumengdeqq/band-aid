@@ -3,6 +3,7 @@ package com.zero.bandaid.patch;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.zero.bandaid.AppUtil;
 import com.zero.bandaid.HotFix;
 import com.zero.bandaid.Env;
 import com.zero.bandaid.annotation.ClassFix;
@@ -13,6 +14,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import dalvik.system.DexFile;
 
 /**
  * Created by chaopei on 2016/2/27.
@@ -25,11 +28,18 @@ public abstract class Patch {
         String name;
         long timestamp;
         String versionBuild;
+        String[] patchClasses = null;
+        /**
+         * all - 所有进程，main - 主进程，以":"开头的词 - 其他指定进程，其他字符 - 与all相同
+         */
+        String applyProcess;
 
-        Info(String name, long timestamp, String versionBuild) {
+        Info(String name, long timestamp, String versionBuild, String[] patchClasses, String applyProcess) {
             this.name = name;
             this.timestamp = timestamp;
             this.versionBuild = versionBuild;
+            this.patchClasses = patchClasses;
+            this.applyProcess = applyProcess;
         }
     }
 
@@ -40,6 +50,11 @@ public abstract class Patch {
     public enum Status {
         Unloaded, Loaded, Inited, Fixed
     }
+
+    /**
+     * 加载的 DexFile
+     */
+    private DexFile mDex;
 
     /**
      * 加载它的 ClassLoader
@@ -53,11 +68,6 @@ public abstract class Patch {
     protected Status mStatus = Status.Unloaded;
 
     /**
-     * patch 中包含替换方法的类
-     */
-    protected String[] mPatchClasses = null;
-
-    /**
      * 被替换方法与替换成的方法，Key是被替换的类
      */
     protected Map<String, List<MethodInfo>> mPatchMethods = new HashMap<>();
@@ -69,15 +79,37 @@ public abstract class Patch {
      */
     public abstract Info initPatchInfo();
 
-    public abstract Class<?> loadPatchClass(String patchClass);
+    public abstract DexFile initDexFile();
 
-    public abstract ClassLoader initClassLoader();
-
-    public abstract String[] initPatchClasses();
-
-    public abstract boolean isCurrentProcessApply();
+    private boolean isCurrentProcessApply() {
+        if (TextUtils.isEmpty(getApplyProcess())) { // all
+            return true;
+        } else if ("main".equals(getApplyProcess())) { // 主进程
+            return AppUtil.getPackageName().equals(AppUtil.getProcessName());
+        } else if (getApplyProcess().startsWith(":")) { // 指定进程
+            return AppUtil.getProcessName().endsWith(getApplyProcess());
+        } else { // all
+            return true;
+        }
+    }
 
     public Patch() {
+    }
+
+    private Class<?> loadPatchClass(String patchClass) {
+        Class<?> clazz = null;
+        try {
+            if (DEBUG) {
+                Log.e(TAG, "[loadPatchClass] : patchClass=" + patchClass);
+            }
+            clazz = Class.forName(patchClass, true, mClassLoader);
+            if (DEBUG) {
+                Log.e(TAG, "[loadPatchClass] : clazz=" + clazz);
+            }
+        } catch (ClassNotFoundException e) {
+            Log.e(TAG, "", e);
+        }
+        return clazz;
     }
 
     /**
@@ -135,7 +167,21 @@ public abstract class Patch {
         }
     }
 
+    private ClassLoader initClassLoader() {
+        return new ClassLoader(getClass().getClassLoader()) { //这个classloader设置!!!!!
+            @Override
+            protected Class<?> findClass(String className) throws ClassNotFoundException {
+                Class<?> clazz = mDex.loadClass(className, this);
+                if (null == clazz) {
+                    throw new ClassNotFoundException(className);
+                }
+                return clazz;
+            }
+        };
+    }
+
     public boolean init() {
+        mDex = initDexFile();
         mClassLoader = initClassLoader();
         mPatchInfo = initPatchInfo();
         if (!isCurrentProcessApply()) {
@@ -143,7 +189,7 @@ public abstract class Patch {
         }
         try {
             // patch中哪些类是包含被替换方法的
-            String[] classStrs = initPatchClasses();
+            String[] classStrs = getPatchClasses();
             for (String str : classStrs) {
                 String classStr = str.trim();
                 if (!TextUtils.isEmpty(classStr)) {
@@ -169,16 +215,16 @@ public abstract class Patch {
         return mPatchMethods;
     }
 
-    public String[] getPatchClasses() {
-        return mPatchClasses;
-    }
-
     public Status getStatus() {
         return mStatus;
     }
 
     public void setStatus(Status status) {
         this.mStatus = status;
+    }
+
+    public String[] getPatchClasses() {
+        return mPatchInfo.patchClasses;
     }
 
     public String getPatchName() {
@@ -194,5 +240,9 @@ public abstract class Patch {
      */
     public String getVersionBuild() {
         return mPatchInfo.versionBuild;
+    }
+
+    public String getApplyProcess() {
+        return mPatchInfo.applyProcess;
     }
 }
