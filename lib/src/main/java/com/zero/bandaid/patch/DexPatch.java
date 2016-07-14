@@ -35,7 +35,6 @@ public class DexPatch extends Patch {
     /**
      * @param dexPath    要加载的apk文件路径
      * @param optDexPath 要存储的 odex 文件路径
-     * @throws IOException
      */
     public DexPatch(Context context, String dexPath, String optDexPath) {
         super();

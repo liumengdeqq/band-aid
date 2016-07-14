@@ -70,7 +70,12 @@ public abstract class Patch {
     /**
      * 被替换方法与替换成的方法，Key是被替换的类
      */
-    protected Map<String, List<MethodInfo>> mPatchMethods = new HashMap<>();
+    private Map<String, List<MethodInfo>> mPatchMethods = new HashMap<>();
+
+    /**
+     * 被替换类与替换成的类，Key是被替换的类
+     */
+    private Map<Class<?>, Class<?>> mPatchCLasses = new HashMap<>();
 
     /**
      * 初始化patch基本信息
@@ -124,12 +129,23 @@ public abstract class Patch {
             if (null == dstClazz) {
                 return false;
             }
-            //todo 判断该类是否是替换类
+            // 判断该类是否是替换类
             ClassFix srcClazzAnnotation = dstClazz.getAnnotation(ClassFix.class);
-            if (null != srcClazzAnnotation) {
-                //todo 说明是替换类
+            if (null != srcClazzAnnotation) { // 说明是替换类
+                String srcClassStr = srcClazzAnnotation.clazz();
+                Class<?> srcClazz = null;
+                try {
+                    srcClazz = Class.forName(srcClassStr);
+                    mPatchCLasses.put(srcClazz, dstClazz);
+                    return true;
+                } catch (ClassNotFoundException e) {
+                    Log.e(TAG, "", e);
+                    return false;
+                }
             }
 
+
+            // 说明是替换方法
             Method[] dstClazzAllMethods = dstClazz.getDeclaredMethods();
             // 标注中包含被替换方法的信息
             MethodFix srcMethodFixAnnotaion;
