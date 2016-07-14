@@ -58,7 +58,7 @@ public class ApkOrJarPatch extends Patch {
     }
 
     @Override
-    public void initMetaInfo() {
+    public Info initPatchInfo() {
         JarFile jarFile = null;
         InputStream inputStream = null;
         try {
@@ -69,11 +69,12 @@ public class ApkOrJarPatch extends Patch {
             Manifest manifest = new Manifest(inputStream);
             Attributes main = manifest.getMainAttributes();
             // patch名
-            mName = main.getValue(PATCH_NAME);
-            // patch对应卫士的版本号
-            mVersionBuild = main.getValue(PATCH_VERSION_BUILD);
+            String name = main.getValue(PATCH_NAME);
+            // patch对应主工程版本号
+            String versionBuild = main.getValue(PATCH_VERSION_BUILD);
             // patch创建的时间戳
-            mTimestamp = Long.parseLong(main.getValue(PATCH_TIMESTAMP));
+            long timestamp = Long.parseLong(main.getValue(PATCH_TIMESTAMP));
+            return new Info(name, timestamp, versionBuild);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -92,7 +93,7 @@ public class ApkOrJarPatch extends Patch {
                 }
             }
         }
-
+        return null;
     }
 
     @Override

@@ -75,11 +75,11 @@ public class DexPatch extends Patch {
             Log.e(TAG, "", e);
         }
         return clazz;
-//        return mDex.loadClass(patchClass, mClassLoader);
     }
 
-    public void initMetaInfo() {
+    public Info initPatchInfo() {
         //none
+        return null;
     }
 
     public String[] initPatchClasses() {

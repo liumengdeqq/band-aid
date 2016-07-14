@@ -21,6 +21,18 @@ import java.util.Map;
  */
 public abstract class Patch {
 
+    class Info {
+        String name;
+        long timestamp;
+        String versionBuild;
+
+        Info(String name, long timestamp, String versionBuild) {
+            this.name = name;
+            this.timestamp = timestamp;
+            this.versionBuild = versionBuild;
+        }
+    }
+
     private static final boolean DEBUG = Env.DEBUG;
 
     private static final String TAG = DEBUG ? "Patch" : Patch.class.getSimpleName();
@@ -36,11 +48,7 @@ public abstract class Patch {
 
     public static final String DEFAULT_PATCH_NAME = "Unknown";
 
-    protected String mName = DEFAULT_PATCH_NAME;
-
-    protected long mTimestamp;
-
-    protected String mVersionBuild;
+    protected Info mPatchInfo;
 
     protected Status mStatus = Status.Unloaded;
 
@@ -59,7 +67,7 @@ public abstract class Patch {
      *
      * @return
      */
-    public abstract void initMetaInfo();
+    public abstract Info initPatchInfo();
 
     public abstract Class<?> loadPatchClass(String patchClass);
 
@@ -129,7 +137,7 @@ public abstract class Patch {
 
     public boolean init() {
         mClassLoader = initClassLoader();
-        initMetaInfo();
+        mPatchInfo = initPatchInfo();
         if (!isCurrentProcessApply()) {
             return false;
         }
@@ -174,17 +182,17 @@ public abstract class Patch {
     }
 
     public String getPatchName() {
-        return mName;
+        return mPatchInfo.name;
     }
 
     public long getTimestamp() {
-        return mTimestamp;
+        return mPatchInfo.timestamp;
     }
 
     /**
      * @return 返回该patch对应的版本号+build号，如 6.3.0.1234
      */
     public String getVersionBuild() {
-        return mVersionBuild;
+        return mPatchInfo.versionBuild;
     }
 }
