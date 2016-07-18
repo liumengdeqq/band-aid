@@ -36,6 +36,6 @@ typedef void* (*QuickArgumentVisitor_constr)(void *, bool, char const*, unsigned
 
 extern "C" void artDeliverPendingExceptionFromCode(void *);
 
-extern jboolean art_setup(JNIEnv *env, int apilevel);
+extern jint art_setup(JNIEnv *env, int apilevel);
 
 extern artDeliverPendingExceptionFromCode_func artDeliverPendingExceptionFromCode_fnPtr;

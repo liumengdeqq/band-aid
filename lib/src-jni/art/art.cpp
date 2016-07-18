@@ -25,8 +25,9 @@ void throwNPE(JNIEnv *env, const char *msg) {
 //	env->ThrowNew(NPEClazz, msg);
 }
 
-jboolean __attribute__ ((visibility ("hidden"))) art_setup(
+jint __attribute__ ((visibility ("hidden"))) art_setup(
         JNIEnv *env, int apilevel) {
+    int res = 0;
 
     void *art_hand = dlopen("libart.so", RTLD_NOW);
     if (art_hand) {
@@ -34,7 +35,7 @@ jboolean __attribute__ ((visibility ("hidden"))) art_setup(
                                                                                    "artDeliverPendingExceptionFromCode");
         if (!artDeliverPendingExceptionFromCode_fnPtr) {
             throwNPE(env, "artDeliverPendingExceptionFromCode_fnPtr");
-            return JNI_FALSE;
+            res |= 0x40000;
         }
 //        QuickArgumentVisitor_constrPtr = (QuickArgumentVisitor_constr) art_dlsym(art_hand,
 //                                                                                 "_ZN3art20QuickArgumentVisitorC2EPNS_14StackReferenceINS_6mirror9ArtMethodEEEbPKcj");
@@ -42,10 +43,10 @@ jboolean __attribute__ ((visibility ("hidden"))) art_setup(
 //            throwNPE(env, "QuickArgumentVisitor_constrPtr");
 //            return JNI_FALSE;
 //        }
-        return JNI_TRUE;
     } else {
-        return JNI_FALSE;
+        res |= 0x20000;
     }
+    return res;
 }
 
 extern "C" void artDeliverPendingExceptionFromCode(void *self){

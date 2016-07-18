@@ -14,7 +14,9 @@ bool ArtBridge::setup(JNIEnv *env, int apilevel) {
 //        return JNI_FALSE;
 //    } else {
     mApiLevel = apilevel;
-    return art_setup(env, apilevel);
+    int res = art_setup(env, apilevel);
+    setStatus(res);
+    return 0 == res;
 //    }
 }
 
