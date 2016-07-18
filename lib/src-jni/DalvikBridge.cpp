@@ -8,8 +8,10 @@
 
 const DalvikBridge* DalvikBridge::sInstance = new DalvikBridge;
 
-jboolean DalvikBridge::setup(JNIEnv *env, int apilevel) {
-    return dalvik_setup(env, apilevel);
+bool DalvikBridge::setup(JNIEnv *env, int apilevel) {
+    int res = dalvik_setup(env, apilevel);
+    setStatus(res);
+    return 0 == res;
 }
 
 void DalvikBridge::setFieldFlag(JNIEnv *env, jobject field) {

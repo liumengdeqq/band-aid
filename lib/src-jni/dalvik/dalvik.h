@@ -341,4 +341,7 @@ typedef Object *(*dvmDecodeIndirectRef_func)(void *self, jobject jobj);
 
 typedef void *(*dvmThreadSelf_func)();
 
+typedef ClassObject *(*dvmResolveClass_func)(const ClassObject* referrer, u4 classIdx,
+                                      bool fromUnverifiedConstant);
+
 #endif

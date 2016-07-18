@@ -19,7 +19,7 @@ public:
         return sInstance;
     }
 
-    virtual jboolean setup(JNIEnv *env, int apilevel);
+    virtual bool setup(JNIEnv *env, int apilevel);
 
     virtual void applyPatch(JNIEnv *env, jobject src, jobject dest, Mode mode);
 

@@ -7,6 +7,7 @@ set(CMAKE_NDK_ROOT D:/sdk/android-ndk-r10d)
 include_directories(${CMAKE_NDK_ROOT}/platforms/android-9/arch-arm/usr/include
                     ${CMAKE_NDK_ROOT}/platforms/android-9/arch-arm/usr/include/EGL
                     ${CMAKE_NDK_ROOT}/sources/cxx-stl/stlport/stlport
+                    jni/prebuilt/include
                     )
 
 set(SOURCE_FILES

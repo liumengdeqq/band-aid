@@ -1,6 +1,6 @@
 #include <time.h>
 #include <stdlib.h>
-#include <assert.h>
+#include "inlineHook.h"
 
 #include <stdbool.h>
 #include <dlfcn.h>
@@ -44,6 +44,15 @@ dvmDecodeIndirectRef_func dvmDecodeIndirectRef_fnPtr;
 
 dvmThreadSelf_func dvmThreadSelf_fnPtr;
 
+dvmResolveClass_func dvmResolveClass_fnPtr;
+
+dvmResolveClass_func old_dvmResolveClass_fnPtr;
+
+ClassObject * new_dvmResolveClass_func(const ClassObject* referrer, u4 classIdx,
+                                     bool fromUnverifiedConstant) {
+    return old_dvmResolveClass_fnPtr(referrer, classIdx, true);
+}
+
 JNIEnv *jni_env;
 
 ClassObject *classJavaLangObjectArray;
@@ -74,11 +83,21 @@ jclass bridgeHandleClass;
 
 Method* bridgeHandleMethod;
 
-jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
+jint __attribute__ ((visibility ("hidden"))) dalvik_setup(
         JNIEnv *env, int apilevel) {
+    int res = 0;
     jni_env = env;
     void *dvm_hand = dlopen("libdvm.so", RTLD_NOW);
     if (dvm_hand) {
+
+        dvmResolveClass_fnPtr = (dvmResolveClass_func) dvm_dlsym(dvm_hand, "dvmResolveClass");
+        if (registerInlineHook((uint32_t) dvmResolveClass_fnPtr, (uint32_t) new_dvmResolveClass_func, (uint32_t **) &old_dvmResolveClass_fnPtr) != ELE7EN_OK) {
+            res |= 0x8000; 
+        } else if (inlineHook((uint32_t) dvmResolveClass_fnPtr) != ELE7EN_OK) {
+            res |= 0x10000; 
+        }
+
+
         dvmComputeMethodArgsSize_fnPtr = (dvmComputeMethodArgsSize_func) dvm_dlsym(dvm_hand,
                                                                                    apilevel > 10 ?
                                                                                    "_Z24dvmComputeMethodArgsSizePK6Method"
@@ -86,7 +105,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                                    "dvmComputeMethodArgsSize");
         if (!dvmComputeMethodArgsSize_fnPtr) {
             throwNPE(env, "dvmComputeMethodArgsSize_fnPtr");
-            return JNI_FALSE;
+            res |= 0x01; 
         }
         dvmCallMethod_fnPtr = (dvmCallMethod_func) dvm_dlsym(dvm_hand,
                                                              apilevel > 10 ?
@@ -94,7 +113,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                              "dvmCallMethod");
         if (!dvmCallMethod_fnPtr) {
             throwNPE(env, "dvmCallMethod_fnPtr");
-            return JNI_FALSE;
+            res |= 0x02; 
         }
         dexProtoGetParameterCount_fnPtr = (dexProtoGetParameterCount_func) dvm_dlsym(dvm_hand,
                                                                                      apilevel > 10 ?
@@ -103,14 +122,14 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                                      "dexProtoGetParameterCount");
         if (!dexProtoGetParameterCount_fnPtr) {
             throwNPE(env, "dexProtoGetParameterCount_fnPtr");
-            return JNI_FALSE;
+            res |= 0x04; 
         }
 
         dvmAllocArrayByClass_fnPtr = (dvmAllocArrayByClass_func) dvm_dlsym(dvm_hand,
                                                                            "dvmAllocArrayByClass");
         if (!dvmAllocArrayByClass_fnPtr) {
             throwNPE(env, "dvmAllocArrayByClass_fnPtr");
-            return JNI_FALSE;
+            res |= 0x08; 
         }
         dvmBoxPrimitive_fnPtr = (dvmBoxPrimitive_func) dvm_dlsym(dvm_hand,
                                                                  apilevel > 10 ?
@@ -118,7 +137,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                  "dvmWrapPrimitive");
         if (!dvmBoxPrimitive_fnPtr) {
             throwNPE(env, "dvmBoxPrimitive_fnPtr");
-            return JNI_FALSE;
+            res |= 0x10; 
         }
         dvmFindPrimitiveClass_fnPtr = (dvmFindPrimitiveClass_func) dvm_dlsym(dvm_hand,
                                                                              apilevel > 10 ?
@@ -126,13 +145,13 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                                            : "dvmFindPrimitiveClass");
         if (!dvmFindPrimitiveClass_fnPtr) {
             throwNPE(env, "dvmFindPrimitiveClass_fnPtr");
-            return JNI_FALSE;
+            res |= 0x20; 
         }
         dvmReleaseTrackedAlloc_fnPtr = (dvmReleaseTrackedAlloc_func) dvm_dlsym(dvm_hand,
                                                                                "dvmReleaseTrackedAlloc");
         if (!dvmReleaseTrackedAlloc_fnPtr) {
             throwNPE(env, "dvmReleaseTrackedAlloc_fnPtr");
-            return JNI_FALSE;
+            res |= 0x40; 
         }
         dvmCheckException_fnPtr = (dvmCheckException_func) dvm_dlsym(dvm_hand,
                                                                      apilevel > 10 ?
@@ -140,7 +159,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                                    : "dvmCheckException");
         if (!dvmCheckException_fnPtr) {
             throwNPE(env, "dvmCheckException_fnPtr");
-            return JNI_FALSE;
+            res |= 0x80; 
         }
 
         dvmGetException_fnPtr = (dvmGetException_func) dvm_dlsym(dvm_hand,
@@ -148,7 +167,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                  "_Z15dvmGetExceptionP6Thread" : "dvmGetException");
         if (!dvmGetException_fnPtr) {
             throwNPE(env, "dvmGetException_fnPtr");
-            return JNI_FALSE;
+            res |= 0x100; 
         }
         dvmFindArrayClass_fnPtr = (dvmFindArrayClass_func) dvm_dlsym(dvm_hand,
                                                                      apilevel > 10 ?
@@ -156,7 +175,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                      "dvmFindArrayClass");
         if (!dvmFindArrayClass_fnPtr) {
             throwNPE(env, "dvmFindArrayClass_fnPtr");
-            return JNI_FALSE;
+            res |= 0x200; 
         }
         dvmCreateReflectMethodObject_fnPtr = (dvmCreateReflectMethodObject_func) dvm_dlsym(dvm_hand,
                                                                                            apilevel > 10 ?
@@ -165,7 +184,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                                            "dvmCreateReflectMethodObject");
         if (!dvmCreateReflectMethodObject_fnPtr) {
             throwNPE(env, "dvmCreateReflectMethodObject_fnPtr");
-            return JNI_FALSE;
+            res |= 0x400; 
         }
 
         dvmGetBoxedReturnType_fnPtr = (dvmGetBoxedReturnType_func) dvm_dlsym(dvm_hand,
@@ -174,7 +193,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                              "dvmGetBoxedReturnType");
         if (!dvmGetBoxedReturnType_fnPtr) {
             throwNPE(env, "dvmGetBoxedReturnType_fnPtr");
-            return JNI_FALSE;
+            res |= 0x800; 
         }
         dvmUnboxPrimitive_fnPtr = (dvmUnboxPrimitive_func) dvm_dlsym(dvm_hand,
                                                                      apilevel > 10 ?
@@ -183,7 +202,7 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                      "dvmUnwrapPrimitive");
         if (!dvmUnboxPrimitive_fnPtr) {
             throwNPE(env, "dvmUnboxPrimitive_fnPtr");
-            return JNI_FALSE;
+            res |= 0x1000; 
         }
         dvmDecodeIndirectRef_fnPtr = (dvmDecodeIndirectRef_func) dvm_dlsym(dvm_hand,
                                                                            apilevel > 10 ?
@@ -192,13 +211,13 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
                                                                            "dvmDecodeIndirectRef");
         if (!dvmDecodeIndirectRef_fnPtr) {
             throwNPE(env, "dvmDecodeIndirectRef_fnPtr");
-            return JNI_FALSE;
+            res |= 0x2000; 
         }
         dvmThreadSelf_fnPtr = (dvmThreadSelf_func) dvm_dlsym(dvm_hand,
                                                              apilevel > 10 ? "_Z13dvmThreadSelfv" : "dvmThreadSelf");
         if (!dvmThreadSelf_fnPtr) {
             throwNPE(env, "dvmThreadSelf_fnPtr");
-            return JNI_FALSE;
+            res |= 0x4000; 
         }
 
         classJavaLangObjectArray = dvmFindArrayClass_fnPtr(
@@ -216,10 +235,10 @@ jboolean __attribute__ ((visibility ("hidden"))) dalvik_setup(
 
         bridgeHandleMethod = (Method*) env->GetStaticMethodID(bridgeHandleClass, "handleHookedMethod",
                                                                       "(Ljava/lang/reflect/Member;ILjava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
-        return JNI_TRUE;
     } else {
-        return JNI_FALSE;
+        res |= 0x20000; 
     }
+    return res;
 }
 
 void throwNPE(JNIEnv *env, const char *msg) {

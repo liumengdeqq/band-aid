@@ -4,7 +4,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE:= band-aid
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)
+LOCAL_C_INCLUDES := $(LOCAL_PATH) $(LOCAL_PATH)/jni/prebuilt/include
 
 LOCAL_SRC_FILES:= HotPatch.cpp\
                   dalvik/dalvik.cpp\

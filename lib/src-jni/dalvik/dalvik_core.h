@@ -145,7 +145,7 @@ extern jmethodID jInvokeMethod;
  */
 extern jmethodID jClassMethod;
 
-extern jboolean dalvik_setup(JNIEnv *env, int apilevel);
+extern jint dalvik_setup(JNIEnv *env, int apilevel);
 
 extern void dalvik_replace(JNIEnv *env, jobject src, jobject dest);
 

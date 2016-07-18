@@ -16,7 +16,7 @@ public:
         return sInstance;
     }
 
-    virtual jboolean setup(JNIEnv *env, int apilevel);
+    virtual bool setup(JNIEnv *env, int apilevel);
 
     virtual void setFieldFlag(JNIEnv *env, jobject field);
 

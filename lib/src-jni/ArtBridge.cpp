@@ -8,7 +8,7 @@
 
 const ArtBridge *ArtBridge::sInstance = new ArtBridge;
 
-jboolean ArtBridge::setup(JNIEnv *env, int apilevel) {
+bool ArtBridge::setup(JNIEnv *env, int apilevel) {
 //    if (19 >= apilevel) {
 //        // kitkat上也支持art
 //        return JNI_FALSE;

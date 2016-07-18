@@ -13,9 +13,20 @@ enum Mode {
 
 class Bridge {
 
+private:
+    int status;
+
 public:
 
-    virtual jboolean setup(JNIEnv *env, int apilevel) = 0;
+    void setStatus(int status) {
+        this->status = status;
+    }
+
+    int getStatus() {
+        return status;
+    }
+
+    virtual bool setup(JNIEnv *env, int apilevel) = 0;
 
     virtual void applyPatch(JNIEnv *env, jobject src, jobject dest, Mode mode) = 0;
 
