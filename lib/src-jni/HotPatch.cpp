@@ -21,6 +21,11 @@ static bool setup(JNIEnv *env, jclass clazz, jboolean isart, jint apilevel) {
     return sBridgeImpl->setup(env, apilevel);
 }
 
+static bool isAvailable(Mode mode) {
+    //todo
+    return true;
+}
+
 /**
  * JNI方法，替换某方法，src -> dest
  */
@@ -48,7 +53,8 @@ static void setFieldFlag(JNIEnv *env, jclass clazz, jobject field) {
  */
 static JNINativeMethod gMethods[] = {
 /* name, signature, funcPtr */
-        {"setupNative", "(ZI)Z",                        (void *) setup},
+        {"setupNative", "(ZI)Z",                        (bool *) setup},
+        {"isAvailable", "(I)Z",                        (bool *) isAvailable},
         {"applyPatchNative",
                   "(Ljava/lang/reflect/Method;Ljava/lang/reflect/Method;I)V",
                                                   (void *) applyPatch},

@@ -8,7 +8,7 @@
 #include "common.h"
 
 enum Mode {
-    DISPATCH_JAVA, DISPATCH_CPP, REPLACE
+    DISPATCH_JAVA=0, DISPATCH_CPP, REPLACE
 };
 
 class Bridge {
