@@ -250,7 +250,7 @@ public class HotFix {
             Log.d(TAG, "[applyPatch] ; src = " + src.getDeclaringClass().getName() + "." + src.getName());
             Log.d(TAG, "[applyPatch] ; dst = " + dst.getDeclaringClass().getName() + "." + dst.getName());
         }
-        applyPatchNative(src, dst, mode);
+        applyMethodPatchNative(src, dst, mode);
     }
 
     private static void applyPatch(Class<?> src, Class<?> dst) {
@@ -266,7 +266,7 @@ public class HotFix {
      */
     private static native boolean setupNative(boolean isArt, int apilevel);
 
-    private static native void applyPatchNative(Method src, Method dst, int mode);
+    private static native void applyMethodPatchNative(Method src, Method dst, int mode);
 
     private static native void setFieldFlagNative(Field field);
 }

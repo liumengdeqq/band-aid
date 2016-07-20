@@ -24,6 +24,8 @@ import dalvik.system.DexFile;
  */
 public abstract class Patch {
 
+    public final static int MODE_METHOD_DISPATCH_JAVA = 0, MODE_METHOD_DISPATCH_CPP = 1, MODE_METHOD_REPLACE = 2, MODE_CLASS = 3;
+
     class Info {
         String name;
         long timestamp;
@@ -163,6 +165,7 @@ public abstract class Patch {
                 }
                 // 标注中的被修改的方法
                 String meth = srcMethodFixAnnotaion.method();
+                int mode = srcMethodFixAnnotaion.mode();
                 Class<?> srcClazz = HotFix.initTargetClass(Class.forName(clz));
                 if (null != srcClazz && !TextUtils.isEmpty(meth)) {
                     if (DEBUG) {
@@ -170,7 +173,7 @@ public abstract class Patch {
                         Log.d(TAG, "[init] : src meth= " + meth);
                     }
                     Method srcMethod = srcClazz.getDeclaredMethod(meth, dstMethod.getParameterTypes());
-                    methods.add(new MethodInfo(srcMethod, dstMethod, MethodFix.MODE_DISPATCH_CPP));
+                    methods.add(new MethodInfo(srcMethod, dstMethod, mode));
                 } else {
                     return false;
                 }

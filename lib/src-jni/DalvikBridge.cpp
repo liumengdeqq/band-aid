@@ -22,17 +22,17 @@ void DalvikBridge::setFieldFlag(JNIEnv *env, jobject field) {
 
 void DalvikBridge::applyPatch(JNIEnv *env, jobject src, jobject dest, Mode mode) {
     switch (mode) {
-        case DISPATCH_CPP:
+        case MODE_METHOD_DISPATCH_CPP:
             if (!dalvik_is_dispatched(env, src)) {
                 dalvik_dispatch(env, src, dest, false);
             }
             break;
-        case DISPATCH_JAVA:
+        case MODE_METHOD_DISPATCH_JAVA:
             if (!dalvik_is_dispatched(env, src)) {
                 dalvik_dispatch(env, src, dest, true);
             }
             break;
-        case REPLACE:
+        case MODE_METHOD_REPLACE:
             dalvik_replace(env, src, dest);
             break;
         default:

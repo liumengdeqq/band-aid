@@ -9,15 +9,10 @@
 const ArtBridge *ArtBridge::sInstance = new ArtBridge;
 
 bool ArtBridge::setup(JNIEnv *env, int apilevel) {
-//    if (19 >= apilevel) {
-//        // kitkat上也支持art
-//        return JNI_FALSE;
-//    } else {
     mApiLevel = apilevel;
     int res = art_setup(env, apilevel);
     setStatus(res);
     return 0 == res;
-//    }
 }
 
 void ArtBridge::setFieldFlag(JNIEnv *env, jobject field) {
@@ -32,7 +27,7 @@ void ArtBridge::setFieldFlag(JNIEnv *env, jobject field) {
 
 void ArtBridge::applyPatch(JNIEnv *env, jobject src, jobject dest, Mode mode) {
     switch (mode) {
-        case REPLACE:
+        case MODE_METHOD_REPLACE:
             if (mApiLevel > 22) {
                 replace_6_0(env, src, dest);
             } else if (mApiLevel > 21) {
@@ -41,10 +36,10 @@ void ArtBridge::applyPatch(JNIEnv *env, jobject src, jobject dest, Mode mode) {
                 replace_5_0(env, src, dest);
             }
             break;
-        case DISPATCH_CPP:
+        case MODE_METHOD_DISPATCH_CPP:
             art_dispatch_6_0(env, src, dest, false);
             break;
-        case DISPATCH_JAVA:
+        case MODE_METHOD_DISPATCH_JAVA:
             art_dispatch_6_0(env, src, dest, true);
             break;
         default:

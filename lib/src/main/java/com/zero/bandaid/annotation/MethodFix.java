@@ -13,8 +13,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MethodFix {
 
-    public final int MODE_DISPATCH_JAVA = 0, MODE_DISPATCH_CPP = 1, MODE_REPLACE = 2;
-
     /**
      * 被替换的方法所在类
      * @return

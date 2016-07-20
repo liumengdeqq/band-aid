@@ -29,7 +29,7 @@ static bool isAvailable(Mode mode) {
 /**
  * JNI方法，替换某方法，src -> dest
  */
-static void applyPatch(JNIEnv *env, jclass clazz, jobject src, jobject dest, jint mode) {
+static void applyMethodPatch(JNIEnv *env, jclass clazz, jobject src, jobject dest, jint mode) {
 #ifdef DEBUG
     LOGD("replaceMethod");
 #endif
@@ -55,9 +55,9 @@ static JNINativeMethod gMethods[] = {
 /* name, signature, funcPtr */
         {"setupNative", "(ZI)Z",                        (bool *) setup},
         {"isAvailable", "(I)Z",                        (bool *) isAvailable},
-        {"applyPatchNative",
+        {"applyMethodPatchNative",
                   "(Ljava/lang/reflect/Method;Ljava/lang/reflect/Method;I)V",
-                                                  (void *) applyPatch},
+                                                  (void *) applyMethodPatch},
         {"setFieldFlagNative",
                   "(Ljava/lang/reflect/Field;)V", (void *) setFieldFlag},};
 
