@@ -26,7 +26,7 @@ public abstract class Patch {
 
     public final static int MODE_METHOD_DISPATCH_JAVA = 0, MODE_METHOD_DISPATCH_CPP = 1, MODE_METHOD_REPLACE = 2, MODE_CLASS = 3;
 
-    class Info {
+    static class Info {
         String name;
         long timestamp;
         String versionBuild;
