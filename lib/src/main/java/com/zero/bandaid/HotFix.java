@@ -6,7 +6,7 @@ import android.util.Log;
 
 import com.zero.bandaid.patch.DexPatch;
 import com.zero.bandaid.patch.MethodInfo;
-import com.zero.bandaid.patch.Patch;
+import com.zero.bandaid.patch.MethodPatch;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -25,7 +25,7 @@ public class HotFix {
 
     private static final String TAG = DEBUG ? "HotFix" : HotFix.class.getSimpleName();
 
-    private static List<Patch> sPatches = new ArrayList<Patch>();
+    private static List<MethodPatch> sPatches = new ArrayList<MethodPatch>();
 
     private static boolean isSetuped;
 
@@ -50,26 +50,26 @@ public class HotFix {
         return sInstance;
     }
 
-    public synchronized void addPatch(Patch patch) {
+    public synchronized void addPatch(MethodPatch patch) {
 //        if (!isSetuped) {
 //            setup();
 //        }
         sPatches.add(patch);
-        patch.setStatus(Patch.Status.Loaded);
+        patch.setStatus(MethodPatch.Status.Loaded);
         if (!patch.init()) {
             if (DEBUG) {
                 Log.e(TAG, "[addPatch] : patch init failed, name=" + patch.getPatchName());
             }
             return;
         }
-        patch.setStatus(Patch.Status.Inited);
+        patch.setStatus(MethodPatch.Status.Inited);
         for (String clazz : patch.getSrcClasses()) {
             for (MethodInfo method : patch.getSrcDstMethods(clazz)) {
                 applyPatch(method.getSrc(), method.getDst(), method.getMode());
                 initFields(method.getDst().getDeclaringClass());
             }
         }
-        patch.setStatus(Patch.Status.Fixed);
+        patch.setStatus(MethodPatch.Status.Fixed);
     }
 
     public Context getContext() {
@@ -145,9 +145,9 @@ public class HotFix {
                     return false;
                 }
             }
-            Patch patch = new DexPatch(mContext, patchDexFile.getAbsolutePath(), odexDir.getAbsolutePath() + "/test_patch.odex");
+            MethodPatch patch = new DexPatch(mContext, patchDexFile.getAbsolutePath(), odexDir.getAbsolutePath() + "/test_patch.odex");
             sPatches.add(patch);
-            patch.setStatus(Patch.Status.Loaded);
+            patch.setStatus(MethodPatch.Status.Loaded);
             return true;
         } catch (Exception e) {
             if (DEBUG) {
@@ -162,8 +162,8 @@ public class HotFix {
      */
     private boolean applyAll() {
         try {
-            for (Patch patch : sPatches) {
-                if (Patch.Status.Inited == patch.getStatus()) {
+            for (MethodPatch patch : sPatches) {
+                if (MethodPatch.Status.Inited == patch.getStatus()) {
                     for (Map.Entry<Class<?>, Class<?>> entry : patch.getPatchClasses().entrySet()) {
                         applyPatch(entry.getKey(), entry.getValue());
                     }
@@ -173,7 +173,7 @@ public class HotFix {
                             initFields(method.getDst().getDeclaringClass());
                         }
                     }
-                    patch.setStatus(Patch.Status.Fixed);
+                    patch.setStatus(MethodPatch.Status.Fixed);
                 }
             }
             return true;
@@ -190,14 +190,14 @@ public class HotFix {
      */
     private boolean initPatches() {
         try {
-            for (Patch patch : sPatches) {
+            for (MethodPatch patch : sPatches) {
                 if (!patch.init()) {
                     if (DEBUG) {
                         Log.e(TAG, "[initPatches] : patch init failed, name=" + patch.getPatchName());
                     }
                     continue;
                 }
-                patch.setStatus(Patch.Status.Inited);
+                patch.setStatus(MethodPatch.Status.Inited);
             }
             return true;
         } catch (Exception e) {

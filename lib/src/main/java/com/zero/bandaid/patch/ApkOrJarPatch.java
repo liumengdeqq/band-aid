@@ -19,7 +19,7 @@ import dalvik.system.DexFile;
  * Created by chaopei on 2016/2/26.
  * APK文件patch
  */
-public class ApkOrJarPatch extends Patch {
+public class ApkOrJarPatch extends MethodPatch {
 
     private static final boolean DEBUG = Env.DEBUG;
 

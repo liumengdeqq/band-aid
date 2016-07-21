@@ -14,7 +14,7 @@ import dalvik.system.DexFile;
  * Created by chaopei on 2016/2/27.
  * Dex文件patch，just for test by now.
  */
-public class DexPatch extends Patch {
+public class DexPatch extends MethodPatch {
 
     private static final boolean DEBUG = Env.DEBUG;
 
@@ -54,7 +54,7 @@ public class DexPatch extends Patch {
 
     public Info initPatchInfo() {
         //none
-        return new Info(Patch.DEFAULT_PATCH_NAME, new Date().getTime()/1000, "1.0.0.1000", new String[]{"com.zero.Test"}, "all");
+        return new Info(MethodPatch.DEFAULT_PATCH_NAME, new Date().getTime()/1000, "1.0.0.1000", new String[]{"com.zero.Test"}, "all");
     }
 
 }

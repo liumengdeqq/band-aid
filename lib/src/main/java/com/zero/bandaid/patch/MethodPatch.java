@@ -22,7 +22,7 @@ import dalvik.system.DexFile;
  * <p/>
  * Patch 抽象类，表示一个 patch
  */
-public abstract class Patch {
+public abstract class MethodPatch {
 
     public final static int MODE_METHOD_DISPATCH_JAVA = 0, MODE_METHOD_DISPATCH_CPP = 1, MODE_METHOD_REPLACE = 2, MODE_CLASS = 3;
 
@@ -47,7 +47,7 @@ public abstract class Patch {
 
     private static final boolean DEBUG = Env.DEBUG;
 
-    private static final String TAG = DEBUG ? "Patch" : Patch.class.getSimpleName();
+    private static final String TAG = DEBUG ? "Patch" : MethodPatch.class.getSimpleName();
 
     public enum Status {
         Unloaded, Loaded, Inited, Fixed
@@ -100,7 +100,7 @@ public abstract class Patch {
         }
     }
 
-    public Patch() {
+    public MethodPatch() {
     }
 
     private Class<?> loadPatchClass(String patchClass) {
@@ -205,6 +205,10 @@ public abstract class Patch {
         if (!isCurrentProcessApply()) {
             return false;
         }
+        // todo 分 class 和 method 两种情况
+//        if (mode == method) {
+//
+//        }
         try {
             // patch中哪些类是包含被替换方法的
             String[] classStrs = getSrcClasses();
