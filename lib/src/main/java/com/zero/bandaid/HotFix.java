@@ -4,9 +4,9 @@ import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
-import com.zero.bandaid.patch.DexPatch;
 import com.zero.bandaid.patch.MethodInfo;
 import com.zero.bandaid.patch.MethodPatch;
+import com.zero.bandaid.patch.Patch;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -25,7 +25,7 @@ public class HotFix {
 
     private static final String TAG = DEBUG ? "HotFix" : HotFix.class.getSimpleName();
 
-    private static List<MethodPatch> sPatches = new ArrayList<MethodPatch>();
+    private static List<Patch> sPatches = new ArrayList<Patch>();
 
     private static boolean isSetuped;
 
@@ -33,7 +33,7 @@ public class HotFix {
 
     static {
         try {
-            Runtime.getRuntime().loadLibrary("hotpatch");
+            Runtime.getRuntime().loadLibrary("band-aid");
         } catch (Throwable e) {
             if (DEBUG) {
                 Log.e(TAG, "loadLibrary", e);
@@ -50,27 +50,27 @@ public class HotFix {
         return sInstance;
     }
 
-    public synchronized void addPatch(MethodPatch patch) {
-//        if (!isSetuped) {
-//            setup();
+//    public synchronized void addPatch(MethodPatch patch) {
+////        if (!isSetuped) {
+////            setup();
+////        }
+//        sPatches.add(patch);
+//        patch.setStatus(Patch.Status.Loaded);
+//        if (!patch.init()) {
+//            if (DEBUG) {
+//                Log.e(TAG, "[addPatch] : patch init failed, name=" + patch.getPatchName());
+//            }
+//            return;
 //        }
-        sPatches.add(patch);
-        patch.setStatus(MethodPatch.Status.Loaded);
-        if (!patch.init()) {
-            if (DEBUG) {
-                Log.e(TAG, "[addPatch] : patch init failed, name=" + patch.getPatchName());
-            }
-            return;
-        }
-        patch.setStatus(MethodPatch.Status.Inited);
-        for (String clazz : patch.getSrcClasses()) {
-            for (MethodInfo method : patch.getSrcDstMethods(clazz)) {
-                applyPatch(method.getSrc(), method.getDst(), method.getMode());
-                initFields(method.getDst().getDeclaringClass());
-            }
-        }
-        patch.setStatus(MethodPatch.Status.Fixed);
-    }
+//        patch.setStatus(Patch.Status.Inited);
+//        for (String clazz : patch.getSrcClasses()) {
+//            for (MethodInfo method : patch.getSrcDstMethods(clazz)) {
+//                applyPatch(method.getSrc(), method.getDst(), method.getMode());
+//                initFields(method.getDst().getDeclaringClass());
+//            }
+//        }
+//        patch.setStatus(Patch.Status.Fixed);
+//    }
 
     public Context getContext() {
         return mContext;
@@ -95,7 +95,7 @@ public class HotFix {
             Log.e(TAG, "[setup] : apilevel = " + apilevel);
         }
         // HotFix 相关初始化
-        if (!setupNative(isArt, apilevel)) {
+        if (!Patch.setupNative(isArt, apilevel)) {
             if (DEBUG) {
                 Log.e(TAG, "[setup] :setupNative failed");
             }
@@ -145,9 +145,15 @@ public class HotFix {
                     return false;
                 }
             }
-            MethodPatch patch = new DexPatch(mContext, patchDexFile.getAbsolutePath(), odexDir.getAbsolutePath() + "/test_patch.odex");
+            Patch patch = Patch.createFromFile(patchDexFile.getAbsolutePath(), odexDir.getAbsolutePath() + "/test_patch.odex");
+            if (null == patch) {
+                if (DEBUG) {
+                    Log.e(TAG, "[loadPatches], patch = null");
+                }
+                return false;
+            }
             sPatches.add(patch);
-            patch.setStatus(MethodPatch.Status.Loaded);
+            patch.setStatus(Patch.Status.Loaded);
             return true;
         } catch (Exception e) {
             if (DEBUG) {
@@ -162,18 +168,11 @@ public class HotFix {
      */
     private boolean applyAll() {
         try {
-            for (MethodPatch patch : sPatches) {
-                if (MethodPatch.Status.Inited == patch.getStatus()) {
-                    for (Map.Entry<Class<?>, Class<?>> entry : patch.getPatchClasses().entrySet()) {
-                        applyPatch(entry.getKey(), entry.getValue());
+            for (Patch patch : sPatches) {
+                if (Patch.Status.Inited == patch.getStatus()) {
+                    if (patch.apply()) {
+                        patch.setStatus(Patch.Status.Fixed);
                     }
-                    for (Map.Entry<String, List<MethodInfo>> entry : patch.getPatchMethods().entrySet()) {
-                        for (MethodInfo method : entry.getValue()) {
-                            applyPatch(method.getSrc(), method.getDst(), method.getMode());
-                            initFields(method.getDst().getDeclaringClass());
-                        }
-                    }
-                    patch.setStatus(MethodPatch.Status.Fixed);
                 }
             }
             return true;
@@ -190,14 +189,14 @@ public class HotFix {
      */
     private boolean initPatches() {
         try {
-            for (MethodPatch patch : sPatches) {
+            for (Patch patch : sPatches) {
                 if (!patch.init()) {
                     if (DEBUG) {
-                        Log.e(TAG, "[initPatches] : patch init failed, name=" + patch.getPatchName());
+                        Log.e(TAG, "[initPatches] : patch init failed, name=" + patch.getName());
                     }
                     continue;
                 }
-                patch.setStatus(MethodPatch.Status.Inited);
+                patch.setStatus(Patch.Status.Inited);
             }
             return true;
         } catch (Exception e) {
@@ -208,65 +207,4 @@ public class HotFix {
         }
     }
 
-    /**
-     * initialize the target class, and modify access flag of class’ fields to
-     * public
-     *
-     * @param clazz target class
-     * @return initialized class
-     */
-    public static Class<?> initTargetClass(Class<?> clazz) {
-        try {
-            Class<?> targetClazz = Class.forName(clazz.getName(), true,
-                    clazz.getClassLoader());
-
-            initFields(targetClazz);
-            return targetClazz;
-        } catch (Exception e) {
-            Log.e(TAG, "initTargetClass", e);
-        }
-        return null;
-    }
-
-    /**
-     * modify access flag of class’ fields to public
-     *
-     * @param clazz class
-     */
-    private static void initFields(Class<?> clazz) {
-        if (DEBUG) {
-            Log.d(TAG, "[initFields]");
-        }
-        Field[] srcFields = clazz.getDeclaredFields();
-        for (Field srcField : srcFields) {
-            Log.d(TAG, "[initFields] : modify " + clazz.getName() + "." + srcField.getName()
-                    + " flag:");
-            setFieldFlagNative(srcField);
-        }
-    }
-
-    private static void applyPatch(Method src, Method dst, int mode) {
-        if (DEBUG) {
-            Log.d(TAG, "[applyPatch] ; src = " + src.getDeclaringClass().getName() + "." + src.getName());
-            Log.d(TAG, "[applyPatch] ; dst = " + dst.getDeclaringClass().getName() + "." + dst.getName());
-        }
-        applyMethodPatchNative(src, dst, mode);
-    }
-
-    private static void applyPatch(Class<?> src, Class<?> dst) {
-        if (DEBUG) {
-            Log.d(TAG, "[applyPatch] ; src = " + src.getName() + "." + src.getName());
-            Log.d(TAG, "[applyPatch] ; dst = " + dst.getName() + "." + dst.getName());
-        }
-        //todo
-    }
-
-    /**
-     * 初始化 HotFix
-     */
-    private static native boolean setupNative(boolean isArt, int apilevel);
-
-    private static native void applyMethodPatchNative(Method src, Method dst, int mode);
-
-    private static native void setFieldFlagNative(Field field);
 }

@@ -5,7 +5,7 @@
 #include "ArtBridge.h"
 #include "DalvikBridge.h"
 
-#define JNIREG_CLASS "com/qihoo360/hotpatch/HotPatch"
+#define JNIREG_CLASS "com/zero/bandaid/patch/Patch"
 
 static Bridge *sBridgeImpl;
 
@@ -19,11 +19,6 @@ static bool setup(JNIEnv *env, jclass clazz, jboolean isart, jint apilevel) {
         sBridgeImpl = DalvikBridge::getInstance();
     }
     return sBridgeImpl->setup(env, apilevel);
-}
-
-static bool isAvailable(Mode mode) {
-    //todo
-    return true;
 }
 
 /**
@@ -54,7 +49,6 @@ static void setFieldFlag(JNIEnv *env, jclass clazz, jobject field) {
 static JNINativeMethod gMethods[] = {
 /* name, signature, funcPtr */
         {"setupNative", "(ZI)Z",                        (bool *) setup},
-        {"isAvailable", "(I)Z",                        (bool *) isAvailable},
         {"applyMethodPatchNative",
                   "(Ljava/lang/reflect/Method;Ljava/lang/reflect/Method;I)V",
                                                   (void *) applyMethodPatch},

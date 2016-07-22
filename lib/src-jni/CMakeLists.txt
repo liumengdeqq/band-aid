@@ -11,7 +11,7 @@ include_directories(${CMAKE_NDK_ROOT}/platforms/android-9/arch-arm/usr/include
                     )
 
 set(SOURCE_FILES
-    HotPatch.cpp
+    Patch.cpp
     DalvikBridge.cpp
     dalvik/dalvik.cpp
     dalvik/dalvik_method_dispatch.cpp

@@ -9,6 +9,8 @@ import com.zero.bandaid.Env;
 import com.zero.bandaid.annotation.ClassFix;
 import com.zero.bandaid.annotation.MethodFix;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,39 +21,13 @@ import dalvik.system.DexFile;
 
 /**
  * Created by chaopei on 2016/2/27.
- * <p/>
- * Patch 抽象类，表示一个 patch
+ * 方法替换的 patch
  */
-public abstract class MethodPatch {
-
-    public final static int MODE_METHOD_DISPATCH_JAVA = 0, MODE_METHOD_DISPATCH_CPP = 1, MODE_METHOD_REPLACE = 2, MODE_CLASS = 3;
-
-    static class Info {
-        String name;
-        long timestamp;
-        String versionBuild;
-        String[] srcClasses = null;
-        /**
-         * all - 所有进程，main - 主进程，以":"开头的词 - 其他指定进程，其他字符 - 与all相同
-         */
-        String applyProcess;
-
-        Info(String name, long timestamp, String versionBuild, String[] srcClasses, String applyProcess) {
-            this.name = name;
-            this.timestamp = timestamp;
-            this.versionBuild = versionBuild;
-            this.srcClasses = srcClasses;
-            this.applyProcess = applyProcess;
-        }
-    }
+public class MethodPatch extends Patch {
 
     private static final boolean DEBUG = Env.DEBUG;
 
-    private static final String TAG = DEBUG ? "Patch" : MethodPatch.class.getSimpleName();
-
-    public enum Status {
-        Unloaded, Loaded, Inited, Fixed
-    }
+    private static final String TAG = DEBUG ? "MethodPatch" : MethodPatch.class.getSimpleName();
 
     /**
      * 加载的 DexFile
@@ -61,46 +37,28 @@ public abstract class MethodPatch {
     /**
      * 加载它的 ClassLoader
      */
-    protected ClassLoader mClassLoader;
-
-    public static final String DEFAULT_PATCH_NAME = "Unknown";
-
-    protected Info mPatchInfo;
-
-    protected Status mStatus = Status.Unloaded;
+    private ClassLoader mClassLoader;
 
     /**
      * 被替换方法与替换成的方法，Key是被替换的类
      */
     private Map<String, List<MethodInfo>> mPatchMethods = new HashMap<>();
 
-    /**
-     * 被替换类与替换成的类，Key是被替换的类
-     */
-    private Map<Class<?>, Class<?>> mPatchCLasses = new HashMap<>();
-
-    /**
-     * 初始化patch基本信息
-     *
-     * @return
-     */
-    public abstract Info initPatchInfo();
-
-    public abstract DexFile initDexFile();
-
     private boolean isCurrentProcessApply() {
-        if (TextUtils.isEmpty(getApplyProcess())) { // all
+        String process = getInfo().applyProcess;
+        if (TextUtils.isEmpty(process)) { // all
             return true;
-        } else if ("main".equals(getApplyProcess())) { // 主进程
+        } else if ("main".equals(process)) { // 主进程
             return AppUtil.getPackageName().equals(AppUtil.getProcessName());
-        } else if (getApplyProcess().startsWith(":")) { // 指定进程
-            return AppUtil.getProcessName().endsWith(getApplyProcess());
+        } else if (process.startsWith(":")) { // 指定进程
+            return AppUtil.getProcessName().endsWith(process);
         } else { // all
             return true;
         }
     }
 
-    public MethodPatch() {
+    MethodPatch(Patch.Info info) {
+        super(info);
     }
 
     private Class<?> loadPatchClass(String patchClass) {
@@ -131,21 +89,6 @@ public abstract class MethodPatch {
             if (null == dstClazz) {
                 return false;
             }
-            // 判断该类是否是替换类
-            ClassFix srcClazzAnnotation = dstClazz.getAnnotation(ClassFix.class);
-            if (null != srcClazzAnnotation) { // 说明是替换类
-                String srcClassStr = srcClazzAnnotation.clazz();
-                try {
-                    Class<?> srcClazz = Class.forName(srcClassStr);
-                    mPatchCLasses.put(srcClazz, dstClazz);
-                    return true;
-                } catch (ClassNotFoundException e) {
-                    Log.e(TAG, "", e);
-                    return false;
-                }
-            }
-
-
             // 说明是替换方法
             Method[] dstClazzAllMethods = dstClazz.getDeclaredMethods();
             // 标注中包含被替换方法的信息
@@ -166,7 +109,7 @@ public abstract class MethodPatch {
                 // 标注中的被修改的方法
                 String meth = srcMethodFixAnnotaion.method();
                 int mode = srcMethodFixAnnotaion.mode();
-                Class<?> srcClazz = HotFix.initTargetClass(Class.forName(clz));
+                Class<?> srcClazz = initTargetClass(Class.forName(clz));
                 if (null != srcClazz && !TextUtils.isEmpty(meth)) {
                     if (DEBUG) {
                         Log.d(TAG, "[init] : src clz= " + clz);
@@ -185,6 +128,51 @@ public abstract class MethodPatch {
         }
     }
 
+    /**
+     * initialize the target class, and modify access flag of class’ fields to
+     * public
+     *
+     * @param clazz target class
+     * @return initialized class
+     */
+    private static Class<?> initTargetClass(Class<?> clazz) {
+        try {
+            Class<?> targetClazz = Class.forName(clazz.getName(), true,
+                    clazz.getClassLoader());
+
+            initFields(targetClazz);
+            return targetClazz;
+        } catch (Exception e) {
+            Log.e(TAG, "initTargetClass", e);
+        }
+        return null;
+    }
+
+    private static void applyPatch(Method src, Method dst, int mode) {
+        if (DEBUG) {
+            Log.d(TAG, "[applyPatch] ; src = " + src.getDeclaringClass().getName() + "." + src.getName());
+            Log.d(TAG, "[applyPatch] ; dst = " + dst.getDeclaringClass().getName() + "." + dst.getName());
+        }
+        Patch.applyMethodPatchNative(src, dst, mode);
+    }
+
+    /**
+     * modify access flag of class’ fields to public
+     *
+     * @param clazz class
+     */
+    private static void initFields(Class<?> clazz) {
+        if (DEBUG) {
+            Log.d(TAG, "[initFields]");
+        }
+        Field[] srcFields = clazz.getDeclaredFields();
+        for (Field srcField : srcFields) {
+            Log.d(TAG, "[initFields] : modify " + clazz.getName() + "." + srcField.getName()
+                    + " flag:");
+            Patch.setFieldFlagNative(srcField);
+        }
+    }
+
     private ClassLoader initClassLoader() {
         return new ClassLoader(getClass().getClassLoader()) { //这个classloader设置!!!!!
             @Override
@@ -198,20 +186,16 @@ public abstract class MethodPatch {
         };
     }
 
+    @Override
     public boolean init() {
-        mDex = initDexFile();
-        mClassLoader = initClassLoader();
-        mPatchInfo = initPatchInfo();
-        if (!isCurrentProcessApply()) {
-            return false;
-        }
-        // todo 分 class 和 method 两种情况
-//        if (mode == method) {
-//
-//        }
         try {
+            mDex = DexFile.loadDex(getInfo().path, getInfo().odexPath, 0);
+            mClassLoader = initClassLoader();
+            if (!isCurrentProcessApply()) {
+                return false;
+            }
             // patch中哪些类是包含被替换方法的
-            String[] classStrs = getSrcClasses();
+            String[] classStrs = getInfo().srcClasses;
             for (String str : classStrs) {
                 String classStr = str.trim();
                 if (!TextUtils.isEmpty(classStr)) {
@@ -221,54 +205,21 @@ public abstract class MethodPatch {
                 }
             }
             return true;
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    //////////////////////////////////Getters/////////////////////////////////////
-
-    public List<MethodInfo> getSrcDstMethods(String srcClass) {
-        return mPatchMethods.get(srcClass);
+    @Override
+    public boolean apply() {
+        for (Map.Entry<String, List<MethodInfo>> entry : mPatchMethods.entrySet()) {
+            for (MethodInfo method : entry.getValue()) {
+                applyPatch(method.getSrc(), method.getDst(), method.getMode());
+                initFields(method.getDst().getDeclaringClass());
+            }
+        }
+        return true;
     }
 
-    public Map<String, List<MethodInfo>> getPatchMethods() {
-        return mPatchMethods;
-    }
-
-    public Map<Class<?>, Class<?>> getPatchClasses() {
-        return mPatchCLasses;
-    }
-
-    public Status getStatus() {
-        return mStatus;
-    }
-
-    public void setStatus(Status status) {
-        this.mStatus = status;
-    }
-
-    public String[] getSrcClasses() {
-        return mPatchInfo.srcClasses;
-    }
-
-    public String getPatchName() {
-        return mPatchInfo.name;
-    }
-
-    public long getTimestamp() {
-        return mPatchInfo.timestamp;
-    }
-
-    /**
-     * @return 返回该patch对应的版本号+build号，如 6.3.0.1234
-     */
-    public String getVersionBuild() {
-        return mPatchInfo.versionBuild;
-    }
-
-    public String getApplyProcess() {
-        return mPatchInfo.applyProcess;
-    }
 }
